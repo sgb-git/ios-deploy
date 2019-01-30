@@ -52,6 +52,12 @@ const char* lldb_prep_noninteractive_justlaunch_cmds = "\
     safequit\n\
 ";
 
+const char* lldb_prep_stopapp_cmds = "\
+    run\n\
+    kill\n\
+    autoexit\n\
+";
+
 const char* lldb_prep_noninteractive_cmds = "\
     run\n\
     autoexit\n\
@@ -83,6 +89,7 @@ char const*upload_pathname = NULL;
 char *bundle_id = NULL;
 bool interactive = true;
 bool justlaunch = false;
+bool stopapp = false;
 char *app_path = NULL;
 char *device_id = NULL;
 char *args = NULL;
@@ -729,7 +736,9 @@ void write_lldb_prep_cmds(AMDeviceRef device, CFURLRef disk_app_url) {
     const char* extra_cmds;
     if (!interactive)
     {
-        if (justlaunch)
+        if (stopapp)
+          extra_cmds = lldb_prep_stopapp_cmds;
+        else if (justlaunch)
           extra_cmds = lldb_prep_noninteractive_justlaunch_cmds;
         else
           extra_cmds = lldb_prep_noninteractive_cmds;
@@ -1754,6 +1763,7 @@ void usage(const char* app) {
         @"  -n, --nostart                do not start the app when debugging\n"
         @"  -N, --nolldb                 start debugserver only. do not run lldb\n"
         @"  -I, --noninteractive         start in non interactive mode (quit when app crashes or exits)\n"
+        @"  -S, --stopapp                stop the app\n"
         @"  -L, --justlaunch             just launch the app and exit lldb\n"
         @"  -v, --verbose                enable verbose output\n"
         @"  -m, --noinstall              directly start debugging without app install (-d not required)\n"
@@ -1801,6 +1811,7 @@ int main(int argc, char *argv[]) {
         { "nostart", no_argument, NULL, 'n' },
         { "nolldb", no_argument, NULL, 'N' },
         { "noninteractive", no_argument, NULL, 'I' },
+        { "stopapp", no_argument, NULL, 'S' },
         { "justlaunch", no_argument, NULL, 'L' },
         { "detect", no_argument, NULL, 'c' },
         { "version", no_argument, NULL, 'V' },
@@ -1823,7 +1834,7 @@ int main(int argc, char *argv[]) {
     };
     int ch;
 
-    while ((ch = getopt_long(argc, argv, "VmcdvunNrILeD:R:i:b:a:s:t:g:x:p:1:2:o:l::w::9::B::W", longopts, NULL)) != -1)
+    while ((ch = getopt_long(argc, argv, "VSmcdvunNrILeD:R:i:b:a:s:t:g:x:p:1:2:o:l::w::9::B::W", longopts, NULL)) != -1)
     {
         switch (ch) {
         case 'm':
@@ -1865,6 +1876,11 @@ int main(int argc, char *argv[]) {
             interactive = false;
             debug = true;
             break;
+        case 'S':
+            stopapp = true;
+            justlaunch = true;
+            install = false;
+            debug = true;
         case 'L':
             interactive = false;
             justlaunch = true;
